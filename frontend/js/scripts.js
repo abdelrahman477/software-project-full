@@ -965,6 +965,96 @@ $(document).ready(function () {
         loadNotifications();
     }
 
+    // --- Filter Tasks ---
+    function filterTasks() {
+        const status = $('#filterStatus').val();
+        const priority = $('#filterPriority').val();
+        const dueDate = $('#filterDueDate').val();
+
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        // Build query parameters
+        const params = new URLSearchParams();
+        if (status) params.append('status', status);
+        if (priority) params.append('priority', priority);
+        if (dueDate) params.append('dueDate', dueDate);
+
+        fetch(`${API_BASE_URL}/tasks/filter?${params.toString()}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) {
+                    currentTasks = data;
+                    displayTasks(data);
+                } else {
+                    console.error('Invalid filtered tasks data:', data);
+                    displayTasks([]);
+                }
+            })
+            .catch(error => {
+                console.error('Error filtering tasks:', error);
+                displayTasks([]);
+            });
+    }
+
+    // --- Sort Tasks ---
+    function sortTasks() {
+        const sortBy = $('#sortBy').val();
+        const sortOrder = $('#sortOrder').val();
+
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        // Build query parameters
+        const params = new URLSearchParams();
+        params.append('sortBy', sortBy);
+        params.append('order', sortOrder);
+
+        fetch(`${API_BASE_URL}/tasks/sort?${params.toString()}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) {
+                    currentTasks = data;
+                    displayTasks(data);
+                } else {
+                    console.error('Invalid sorted tasks data:', data);
+                    displayTasks([]);
+                }
+            })
+            .catch(error => {
+                console.error('Error sorting tasks:', error);
+                displayTasks([]);
+            });
+    }
+
+    // --- Apply Filters Button ---
+    $('#applyFiltersBtn').click(function () {
+        filterTasks();
+    });
+
+    // --- Clear Filters Button ---
+    $('#clearFiltersBtn').click(function () {
+        $('#filterStatus').val('');
+        $('#filterPriority').val('');
+        $('#filterDueDate').val('');
+        $('#sortBy').val('created_at');
+        $('#sortOrder').val('desc');
+        loadTasks(); // Load all tasks without filters
+    });
+
+    // --- Sort Change Event ---
+    $('#sortBy, #sortOrder').change(function () {
+        sortTasks();
+    });
+
     // --- Load tasks when on tasks page ---
     if (window.location.pathname.includes('tasks.html')) {
         loadTasks();

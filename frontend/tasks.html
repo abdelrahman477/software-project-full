@@ -65,6 +65,65 @@
                         </div>
                     </div>
                     <div class="card-body">
+                        <!-- Filter and Sort Controls -->
+                        <div class="row mb-3">
+                            <div class="col-md-8">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <label for="filterStatus" class="form-label">Filter by Status</label>
+                                        <select class="form-select" id="filterStatus">
+                                            <option value="">All Statuses</option>
+                                            <option value="pending">Pending</option>
+                                            <option value="in_progress">In Progress</option>
+                                            <option value="completed">Completed</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="filterPriority" class="form-label">Filter by Priority</label>
+                                        <select class="form-select" id="filterPriority">
+                                            <option value="">All Priorities</option>
+                                            <option value="high">High</option>
+                                            <option value="medium">Medium</option>
+                                            <option value="low">Low</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="filterDueDate" class="form-label">Filter by Due Date</label>
+                                        <input type="date" class="form-control" id="filterDueDate">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label for="sortBy" class="form-label">Sort by</label>
+                                        <select class="form-select" id="sortBy">
+                                            <option value="created_at">Creation Date</option>
+                                            <option value="priority">Priority</option>
+                                            <option value="due_date">Due Date</option>
+                                            <option value="title">Title</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="sortOrder" class="form-label">Order</label>
+                                        <select class="form-select" id="sortOrder">
+                                            <option value="desc">Descending</option>
+                                            <option value="asc">Ascending</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <button id="applyFiltersBtn" class="btn btn-outline-primary me-2">
+                                    <i class="bi bi-funnel"></i> Apply Filters
+                                </button>
+                                <button id="clearFiltersBtn" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle"></i> Clear Filters
+                                </button>
+                            </div>
+                        </div>
                         <div id="tasksList">
                             <div class="text-center py-4">
                                 <i class="bi bi-list-task" style="font-size: 3rem; color: #6c757d;"></i>
@@ -193,7 +252,8 @@
                                 <label for="shareUserId" class="form-label">Share with User ID *</label>
                                 <input type="number" class="form-control" id="shareUserId" required
                                     placeholder="Enter user ID">
-                                <div class="form-text">Enter the ID of the user you want to share this task with.</div>
+                                <div class="form-text">Enter the ID of the user you want to share this task with.
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label for="sharePermission" class="form-label">Permission Level *</label>
@@ -201,7 +261,8 @@
                                     <option value="read">Read Only</option>
                                     <option value="write">Read & Write</option>
                                 </select>
-                                <div class="form-text">Read: User can view the task. Write: User can view and edit the
+                                <div class="form-text">Read: User can view the task. Write: User can view and edit
+                                    the
                                     task.</div>
                             </div>
                         </form>

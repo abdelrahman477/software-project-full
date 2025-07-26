@@ -1,5 +1,27 @@
 const { getAllUsers, getUserById, updateUserById } = require('../models/userModel');
 
+
+const getCurrentUserProfile = async (req, res) => {
+    try {
+        // Get the user ID from the JWT token
+        console.log(req.user);
+        console.log(req.user.userId);
+
+        // Fetch the complete user profile from the database
+        const userProfile = await getUserById(req.user.userId);
+
+        if (!userProfile) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        console.log(userProfile);
+
+        res.json(userProfile);
+    } catch (error) {
+        console.error('Error fetching current user profile:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
 const getUserProfile = async (req, res) => {
     try {
         const user = req.params.id;
@@ -13,6 +35,7 @@ const getUserProfile = async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 };
+
 
 const getUsers = async (req, res) => {
     try {
@@ -38,4 +61,4 @@ const updateUser = async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 };
-module.exports = { getUserProfile, getUsers, updateUser };
+module.exports = { getCurrentUserProfile, getUserProfile, getUsers, updateUser };

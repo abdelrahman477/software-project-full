@@ -146,8 +146,28 @@
                         <h5 class="modal-title">Task Details</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
-                    <div class="modal-body" id="taskDetailsContent">
-                        <!-- Task details will be populated here -->
+                    <div class="modal-body">
+                        <div id="taskDetailsContent">
+                            <!-- Task details will be populated here -->
+                        </div>
+
+                        <!-- Comments Section -->
+                        <hr class="my-4">
+                        <div class="comments-section">
+                            <h6>Comments</h6>
+                            <div id="commentsList" class="mb-3">
+                                <!-- Comments will be loaded here -->
+                            </div>
+                            <form id="addCommentForm">
+                                <div class="input-group">
+                                    <textarea class="form-control" id="commentContent" rows="2"
+                                        placeholder="Add a comment..." required></textarea>
+                                    <button class="btn btn-primary" type="submit" id="addCommentBtn">
+                                        <i class="bi bi-send"></i> Add Comment
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>

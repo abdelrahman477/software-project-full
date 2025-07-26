@@ -208,6 +208,9 @@ $(document).ready(function () {
     let currentSharedTasks = [];
     let editingTaskId = null;
     let sharingTaskId = null;
+    let currentTaskComments = [];
+    let currentViewingTaskId = null;
+    let currentNotifications = [];
 
     // --- Load Tasks ---
     function loadTasks() {
@@ -370,7 +373,9 @@ $(document).ready(function () {
         const task = currentTasks.find(t => t.id == taskId);
 
         if (task) {
+            currentViewingTaskId = taskId;
             displayTaskDetails(task);
+            loadTaskComments(taskId);
             $('#taskDetailsModal').modal('show');
         }
     });
@@ -619,7 +624,9 @@ $(document).ready(function () {
         const task = currentSharedTasks.find(t => t.id == taskId);
 
         if (task) {
+            currentViewingTaskId = taskId;
             displaySharedTaskDetails(task);
+            loadTaskComments(taskId);
             $('#taskDetailsModal').modal('show');
         }
     });
@@ -733,6 +740,230 @@ $(document).ready(function () {
             $('#taskModal').modal('show');
         }
     });
+
+    // --- Load Task Comments ---
+    function loadTaskComments(taskId) {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        fetch(`${API_BASE_URL}/tasks/${taskId}/comments`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) {
+                    currentTaskComments = data;
+                    displayComments(data);
+                } else {
+                    console.error('Invalid comments data:', data);
+                    displayComments([]);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading comments:', error);
+                displayComments([]);
+            });
+    }
+
+    // --- Display Comments ---
+    function displayComments(comments) {
+        const commentsContainer = $('#commentsList');
+
+        if (comments.length === 0) {
+            commentsContainer.html('<p class="text-muted">No comments yet. Be the first to comment!</p>');
+            return;
+        }
+
+        let commentsHtml = '';
+        comments.forEach(comment => {
+            const commentDate = new Date(comment.created_at);
+            commentsHtml += `
+                <div class="card mb-2">
+                    <div class="card-body py-2">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <p class="mb-1">${comment.content}</p>
+                                <small class="text-muted">
+                                    <i class="bi bi-person"></i> ${comment.username || 'Unknown User'} | 
+                                    <i class="bi bi-clock"></i> ${commentDate.toLocaleString()}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        commentsContainer.html(commentsHtml);
+    }
+
+    // --- Add Comment Form Submit ---
+    $('#addCommentForm').submit(function (e) {
+        e.preventDefault();
+
+        const content = $('#commentContent').val().trim();
+        if (!content) {
+            alert('Please enter a comment');
+            return;
+        }
+
+        if (!currentViewingTaskId) {
+            alert('No task selected');
+            return;
+        }
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert('Please log in again');
+            return;
+        }
+
+        fetch(`${API_BASE_URL}/tasks/${currentViewingTaskId}/comments`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ content })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.id) {
+                    $('#commentContent').val('');
+                    loadTaskComments(currentViewingTaskId);
+                    alert('Comment added successfully!');
+                } else {
+                    alert(data.error || 'Failed to add comment');
+                }
+            })
+            .catch(() => alert('Failed to add comment: Network or server error'));
+    });
+
+    // --- Load Notifications ---
+    function loadNotifications() {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        fetch(`${API_BASE_URL}/notifications`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) {
+                    currentNotifications = data;
+                    updateNotificationBadge();
+                    displayNotifications(data);
+                } else {
+                    console.error('Invalid notifications data:', data);
+                    currentNotifications = [];
+                    updateNotificationBadge();
+                    displayNotifications([]);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading notifications:', error);
+                currentNotifications = [];
+                updateNotificationBadge();
+                displayNotifications([]);
+            });
+    }
+
+    // --- Update Notification Badge ---
+    function updateNotificationBadge() {
+        const unreadCount = currentNotifications.filter(n => !n.is_read).length;
+        const badge = $('#notificationBadge');
+
+        if (unreadCount > 0) {
+            badge.text(unreadCount).show();
+        } else {
+            badge.hide();
+        }
+    }
+
+    // --- Display Notifications ---
+    function displayNotifications(notifications) {
+        const notificationsContainer = $('#notificationsList');
+
+        if (notifications.length === 0) {
+            notificationsContainer.html(`
+                <div class="text-center py-4">
+                    <i class="bi bi-bell-slash" style="font-size: 3rem; color: #6c757d;"></i>
+                    <p class="text-muted mt-2">No notifications available.</p>
+                </div>
+            `);
+            return;
+        }
+
+        let notificationsHtml = '';
+        notifications.forEach(notification => {
+            const notificationDate = new Date(notification.created_at);
+            const dueDate = notification.due_date ? new Date(notification.due_date) : null;
+            const isUnread = !notification.is_read;
+
+            notificationsHtml += `
+                <div class="card mb-2 ${isUnread ? 'border-primary' : ''}">
+                    <div class="card-body py-2">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h6 class="card-title mb-1 ${isUnread ? 'fw-bold' : ''}">${notification.message}</h6>
+                                ${notification.task_title ? `<p class="text-muted mb-1"><strong>Task:</strong> ${notification.task_title}</p>` : ''}
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        <i class="bi bi-clock"></i> ${notificationDate.toLocaleString()}
+                                    </small>
+                                    ${dueDate ? `<small class="text-muted"><i class="bi bi-calendar"></i> Due: ${dueDate.toLocaleDateString()}</small>` : ''}
+                                </div>
+                            </div>
+                            ${isUnread ? '<span class="badge bg-primary ms-2">New</span>' : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        notificationsContainer.html(notificationsHtml);
+    }
+
+    // --- Notifications Button ---
+    $('#notificationsBtn').click(function () {
+        loadNotifications();
+        $('#notificationsModal').modal('show');
+    });
+
+    // --- Mark All as Read Button ---
+    $('#markAllReadBtn').click(function () {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert('Please log in again');
+            return;
+        }
+
+        fetch(`${API_BASE_URL}/notifications/mark-read`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.message) {
+                    alert('All notifications marked as read!');
+                    loadNotifications(); // Refresh notifications
+                } else {
+                    alert(data.error || 'Failed to mark notifications as read');
+                }
+            })
+            .catch(() => alert('Failed to mark notifications as read: Network or server error'));
+    });
+
+    // --- Load notifications when logged in ---
+    if (localStorage.getItem('token')) {
+        loadNotifications();
+    }
 
     // --- Load tasks when on tasks page ---
     if (window.location.pathname.includes('tasks.html')) {

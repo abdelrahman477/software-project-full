@@ -1,7 +1,13 @@
 const pool = require('./db');
 
 const getCommentsByTaskId = async (taskId) => {
-    const result = await pool.query('SELECT * FROM comments WHERE task_id = $1', [taskId]);
+    const result = await pool.query(`
+        SELECT c.*, u.username 
+        FROM comments c 
+        LEFT JOIN users u ON c.user_id = u.id 
+        WHERE c.task_id = $1 
+        ORDER BY c.created_at ASC
+    `, [taskId]);
     return result.rows;
 };
 

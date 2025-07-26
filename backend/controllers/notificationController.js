@@ -1,7 +1,7 @@
 const notificationModel = require('../models/notificationModel');
 
 const getNotifications = async (req, res) => {
-    const userId = req.userId;
+    const userId = req.user.userId;
     try {
         const notifications = await notificationModel.getNotificationsForUser(userId);
         res.status(200).json(notifications);
@@ -11,7 +11,7 @@ const getNotifications = async (req, res) => {
 };
 
 const markAllAsRead = async (req, res) => {
-    const userId = req.userId;
+    const userId = req.user.userId;
     try {
         const result = await notificationModel.markAllNotificationsAsRead(userId);
         res.status(200).json({ message: 'All notifications marked as read', count: result });

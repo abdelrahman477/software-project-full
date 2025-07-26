@@ -211,6 +211,8 @@ $(document).ready(function () {
     let currentTaskComments = [];
     let currentViewingTaskId = null;
     let currentNotifications = [];
+    let currentUsers = [];
+    let editingUserId = null;
 
     // --- Load Tasks ---
     function loadTasks() {
@@ -1054,6 +1056,158 @@ $(document).ready(function () {
     $('#sortBy, #sortOrder').change(function () {
         sortTasks();
     });
+
+    // --- Load Users (Admin Only) ---
+    function loadUsers() {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        fetch(`${API_BASE_URL}/users`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) {
+                    currentUsers = data;
+                    displayUsers(data);
+                } else {
+                    console.error('Invalid users data:', data);
+                    if (data.error && data.error.includes('Forbidden')) {
+                        alert('Access denied. Admin privileges required.');
+                        window.location.href = 'index.html';
+                    } else {
+                        displayUsers([]);
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error loading users:', error);
+                displayUsers([]);
+            });
+    }
+
+    // --- Display Users ---
+    function displayUsers(users) {
+        const usersContainer = $('#usersTableContainer');
+
+        if (users.length === 0) {
+            usersContainer.html(`
+                <div class="text-center py-4">
+                    <i class="bi bi-people" style="font-size: 3rem; color: #6c757d;"></i>
+                    <p class="text-muted mt-2">No users found.</p>
+                </div>
+            `);
+            return;
+        }
+
+        let usersHtml = `
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Created At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        users.forEach(user => {
+            const createdDate = new Date(user.created_at);
+            const roleClass = user.role === 'admin' ? 'badge bg-danger' : 'badge bg-primary';
+
+            usersHtml += `
+                <tr>
+                    <td>${user.id}</td>
+                    <td>${user.username}</td>
+                    <td>${user.email}</td>
+                    <td><span class="${roleClass}">${user.role || 'user'}</span></td>
+                    <td>${createdDate.toLocaleDateString()}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary edit-user-btn" data-user-id="${user.id}">
+                            <i class="bi bi-pencil"></i> Edit
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        usersHtml += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        usersContainer.html(usersHtml);
+    }
+
+    // --- Edit User Button ---
+    $(document).on('click', '.edit-user-btn', function () {
+        const userId = $(this).data('user-id');
+        const user = currentUsers.find(u => u.id == userId);
+
+        if (user) {
+            editingUserId = userId;
+            $('#editUserUsername').val(user.username);
+            $('#editUserEmail').val(user.email);
+            $('#editUserRole').val(user.role || 'user');
+            $('#editUserModal').modal('show');
+        }
+    });
+
+    // --- Save User Changes ---
+    $('#saveUserBtn').click(function () {
+        const username = $('#editUserUsername').val().trim();
+        const email = $('#editUserEmail').val().trim();
+        const role = $('#editUserRole').val();
+
+        if (!username || !email) {
+            alert('Please fill in all required fields');
+            return;
+        }
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert('Please log in again');
+            return;
+        }
+
+        fetch(`${API_BASE_URL}/users/${editingUserId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ username, email, role })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.id) {
+                    alert('User updated successfully!');
+                    $('#editUserModal').modal('hide');
+                    loadUsers(); // Refresh users list
+                } else {
+                    alert(data.error || 'Failed to update user');
+                }
+            })
+            .catch(() => alert('Failed to update user: Network or server error'));
+    });
+
+    // --- Refresh Users Button ---
+    $('#refreshUsersBtn').click(function () {
+        loadUsers();
+    });
+
+    // --- Load admin panel when on admin page ---
+    if (window.location.pathname.includes('admin.html')) {
+        loadUsers();
+    }
 
     // --- Load tasks when on tasks page ---
     if (window.location.pathname.includes('tasks.html')) {

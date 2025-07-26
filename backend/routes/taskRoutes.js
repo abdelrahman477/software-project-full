@@ -6,6 +6,8 @@ const taskController = require('../controllers/taskController');
 const commentController = require('../controllers/commentController');
 
 router.get('/', authenticateToken, taskController.getUserTasks);
+router.get('/filter', authenticateToken, taskController.filterTasks);
+router.get('/sort', authenticateToken, taskController.sortTasks);
 router.post('/', authenticateToken, taskController.newTask);
 
 router.get('/:id/comments', authenticateToken, commentController.getCommentsForTask);

@@ -83,6 +83,64 @@ const updateTaskStatus = async (taskId, status, userId) => {
     return result.rows[0];
 };
 
+const filterTasks = async (userId, { dueDate, status, priority }) => {
+    let query = 'SELECT * FROM tasks WHERE user_id = $1';
+    let params = [userId];
+    let paramCount = 1;
+
+    if (dueDate) {
+        paramCount++;
+        query += ` AND DATE(due_date) = $${paramCount}`;
+        params.push(dueDate);
+    }
+
+    if (status) {
+        paramCount++;
+        query += ` AND status = $${paramCount}`;
+        params.push(status);
+    }
+
+    if (priority) {
+        paramCount++;
+        query += ` AND priority = $${paramCount}`;
+        params.push(priority);
+    }
+
+    query += ' ORDER BY created_at DESC';
+
+    const result = await pool.query(query, params);
+    return result.rows;
+};
+
+const sortTasks = async (userId, sortBy, order) => {
+    const validSortFields = ['created_at', 'priority', 'due_date', 'title'];
+    const validOrders = ['asc', 'desc'];
+
+    if (!validSortFields.includes(sortBy)) {
+        throw new Error('Invalid sort field');
+    }
+
+    if (!validOrders.includes(order)) {
+        throw new Error('Invalid order');
+    }
+
+    // Handle priority sorting with custom order
+    let orderClause;
+    if (sortBy === 'priority') {
+        orderClause = `CASE 
+            WHEN priority = 'high' THEN 1 
+            WHEN priority = 'medium' THEN 2 
+            WHEN priority = 'low' THEN 3 
+            ELSE 4 
+        END ${order.toUpperCase()}`;
+    } else {
+        orderClause = `${sortBy} ${order.toUpperCase()}`;
+    }
+
+    const query = `SELECT * FROM tasks WHERE user_id = $1 ORDER BY ${orderClause}`;
+    const result = await pool.query(query, [userId]);
+    return result.rows;
+};
 
 module.exports = {
     getAllTasks,
@@ -97,5 +155,7 @@ module.exports = {
     checkOwner,
     getSharedTaskById,
     checkShared,
-    updateTaskStatus
+    updateTaskStatus,
+    filterTasks,
+    sortTasks
 };

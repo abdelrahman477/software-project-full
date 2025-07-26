@@ -216,6 +216,42 @@ const updateStatus = async (req, res) => {
     }
 };
 
+const filterTasks = async (req, res) => {
+    const userId = req.user.userId;
+    const { dueDate, status, priority } = req.query;
+
+    try {
+        const filteredTasks = await taskModel.filterTasks(userId, { dueDate, status, priority });
+        res.status(200).json(filteredTasks);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to filter tasks' });
+    }
+};
+
+const sortTasks = async (req, res) => {
+    const userId = req.user.userId;
+    const { sortBy, order } = req.query;
+
+    // Validate sort parameters
+    const validSortFields = ['created_at', 'priority', 'due_date', 'title'];
+    const validOrders = ['asc', 'desc'];
+
+    if (!validSortFields.includes(sortBy)) {
+        return res.status(400).json({ error: 'Invalid sort field. Use: created_at, priority, due_date, or title' });
+    }
+
+    if (!validOrders.includes(order)) {
+        return res.status(400).json({ error: 'Invalid order. Use: asc or desc' });
+    }
+
+    try {
+        const sortedTasks = await taskModel.sortTasks(userId, sortBy, order);
+        res.status(200).json(sortedTasks);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to sort tasks' });
+    }
+};
+
 module.exports = {
     getUserTasks,
     newTask,
@@ -227,5 +263,7 @@ module.exports = {
     updateSharedTask,
     removeSharedTaskAccess,
     getSharedTaskById,
-    updateStatus
+    updateStatus,
+    filterTasks,
+    sortTasks
 };
